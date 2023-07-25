@@ -107,39 +107,46 @@ def main():
     # After checking for duplicate files in the folder, print duplicate zip files
     print_duplicate_zip_files(folder_path)
 
-    # Ask the user if they want to delete the duplicate files
-    if enable_delete:
-        found_duplicates = False  # Initialize the flag
-        duplicates_to_print = set()  # Use a set to store duplicate file names
-        for size, hash_dict in duplicate_files.items():
-            for file_hash, file_info_list in hash_dict.items():
-                if file_hash == 'file_paths':
-                    continue
+    found_duplicates = False
+    duplicates_to_print = set()
+    for size, hash_dict in duplicate_files.items():
+        for file_hash, file_info_list in hash_dict.items():
+            if file_hash == 'file_paths':
+                continue
 
-                if len(file_info_list) > 1:
-                    found_duplicates = True
-                    # Store the duplicates for later printing
-                    for file_info in file_info_list[1:]:
-                        file_path, _ = file_info
-                        duplicates_to_print.add(os.path.basename(file_path))
-                    # Delete all files except the first one (keep the original)
-                    for file_info in file_info_list[1:]:
-                        file_path, _ = file_info
-                        os.remove(file_path)
-                    print(f"\033[31mDeleted duplicate files with hash {file_hash} and size {size} bytes.\033[0m")
+            if len(file_info_list) > 1:
+                found_duplicates = True
+                # Store the duplicates for later printing
+                for file_info in file_info_list[1:]:
+                    file_path, _ = file_info
+                    duplicates_to_print.add(os.path.basename(file_path))
 
-        if not found_duplicates:
-            print("\033[32mNo duplicates found.\033[0m")
-        elif duplicates_to_print and found_duplicates:
-            print("\033[32mDeletion of duplicate files completed.\033[0m")
-            # Print the duplicates that were deleted
-            print("\nDeleted duplicates:")
-            for file_name in duplicates_to_print:
-                print(file_name)
-            print()
+    if not found_duplicates:
+        print("\033[32mNo duplicates found.\033[0m")
+    elif duplicates_to_print and found_duplicates:
+        if enable_delete:
+            print("\033[33mType 'delete' to confirm deletion of duplicates or press enter to skip. \033[0m")
+            user_input = input(">>")
+            if user_input.strip().lower() == 'delete':
+                # Delete the duplicate files permanently
+                for size, hash_dict in duplicate_files.items():
+                    for file_hash, file_info_list in hash_dict.items():
+                        if file_hash == 'file_paths':
+                            continue
 
-    else:
-        print("Deletion canceled.")
+                        if len(file_info_list) > 1:
+                            for file_info in file_info_list[1:]:
+                                file_path, _ = file_info
+                                os.remove(file_path)
+                            print(f"\033[31mDeleted duplicate files with hash {file_hash} and size {size} bytes.\033[0m")
+                print("\033[32mDeletion of duplicate files completed.\033[0m")
+            else:
+                print("\033[32mDeletion canceled. Duplicates are still available.\033[0m")
+        else:
+            print("\033[32mDuplicates are still available.\033[0m")
+
+    if enable_delete and not found_duplicates:
+        print("\033[33mNo duplicates found. Nothing to delete.\033[0m")
 
 
 if __name__ == '__main__':
