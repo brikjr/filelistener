@@ -33,7 +33,7 @@ def get_file_hash(file_path):
         return None
     
 
-def check_files_in_folder(folder_path, calculate_file_sizes):
+def check_files_in_folder(folder_path, calculate_file_sizes=True):
     """Check for duplicate files in a folder.
 
     This function traverses through the specified folder and its subdirectories,
@@ -90,19 +90,57 @@ def check_files_in_folder(folder_path, calculate_file_sizes):
                 for file_path in file_paths:
                     print(file_path)
                 print()
+
+    return duplicate_files
+    
 def main():
     parser = argparse.ArgumentParser(description='Check for duplicate files in a folder.')
     parser.add_argument('-f', '--folder', required=True, help='Path to the folder')
-    parser.add_argument('-s', '--calculate-sizes',required=True, action='store_true', help='Calculate duplicate file sizes')
+    parser.add_argument('-d', '--delete', action='store_true', help='Flag to enable deletion of duplicates')
     args = parser.parse_args()
 
     folder_path = args.folder
-    calculate_sizes = args.calculate_sizes
+    enable_delete = args.delete
 
-    check_files_in_folder(folder_path, calculate_sizes)
+    duplicate_files = check_files_in_folder(folder_path)
 
     # After checking for duplicate files in the folder, print duplicate zip files
     print_duplicate_zip_files(folder_path)
+
+    # Ask the user if they want to delete the duplicate files
+    if enable_delete:
+        found_duplicates = False  # Initialize the flag
+        duplicates_to_print = set()  # Use a set to store duplicate file names
+        for size, hash_dict in duplicate_files.items():
+            for file_hash, file_info_list in hash_dict.items():
+                if file_hash == 'file_paths':
+                    continue
+
+                if len(file_info_list) > 1:
+                    found_duplicates = True
+                    # Store the duplicates for later printing
+                    for file_info in file_info_list[1:]:
+                        file_path, _ = file_info
+                        duplicates_to_print.add(os.path.basename(file_path))
+                    # Delete all files except the first one (keep the original)
+                    for file_info in file_info_list[1:]:
+                        file_path, _ = file_info
+                        os.remove(file_path)
+                    print(f"\033[31mDeleted duplicate files with hash {file_hash} and size {size} bytes.\033[0m")
+
+        if not found_duplicates:
+            print("\033[32mNo duplicates found.\033[0m")
+        elif duplicates_to_print and found_duplicates:
+            print("\033[32mDeletion of duplicate files completed.\033[0m")
+            # Print the duplicates that were deleted
+            print("\nDeleted duplicates:")
+            for file_name in duplicates_to_print:
+                print(file_name)
+            print()
+
+    else:
+        print("Deletion canceled.")
+
 
 if __name__ == '__main__':
     main()
