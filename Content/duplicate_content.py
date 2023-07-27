@@ -3,7 +3,7 @@ import argparse
 import platform
 import subprocess
 from collections import defaultdict
-from modules.duplicate_zip_files import check_single_zip_for_duplicates
+from Content.modules.duplicate_zip_files import check_single_zip_for_duplicates
 
 
 def get_file_hash(file_path):
