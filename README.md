@@ -14,9 +14,11 @@ pip install filelistener
 To check for duplicate files, use the filelistener command with the -f flag followed by the folder path:
 
 ```
-listen -f /path/to/folder -s
+listen -f /path/to/folder [-d]
 ```
+-d is for deleting the files. It only deleted after confirmation
 
+###For help
 ```
 listen -h
 ```
