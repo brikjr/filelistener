@@ -3,7 +3,7 @@ import argparse
 import platform
 import subprocess
 from collections import defaultdict
-from Content.modules.duplicate_zip_files import print_duplicate_zip_files
+from modules.duplicate_zip_files import check_single_zip_for_duplicates
 
 
 def get_file_hash(file_path):
@@ -92,20 +92,47 @@ def check_files_in_folder(folder_path, calculate_file_sizes=True):
                 print()
 
     return duplicate_files
+
+def print_duplicate_zip_files(folder_path, calculate_sizes):
+    """Print duplicate files in zip archives in the specified folder."""
+    # Traverse through the folder and its subdirectories
+    for root, dirs, files in os.walk(folder_path):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+
+            if file_name.endswith('.zip'):
+                duplicate_file_paths = check_single_zip_for_duplicates(file_path)
+                if duplicate_file_paths:
+                    print(f"Duplicate files in {file_name}:")
+                    for duplicate_file_path in duplicate_file_paths:
+                        print(duplicate_file_path)
+                    print()
+                else:
+                    print(f"No duplicates in {file_name}")
+                    print()
+
+        for subfolder in dirs:
+            subfolder_path = os.path.join(root, subfolder)
+            check_files_in_folder(subfolder_path, calculate_sizes)  # Recursive call to check files in nested folder
+
     
 def main():
     parser = argparse.ArgumentParser(description='Check for duplicate files in a folder.')
     parser.add_argument('-f', '--folder', required=True, help='Path to the folder')
     parser.add_argument('-d', '--delete', action='store_true', help='Flag to enable deletion of duplicates')
+    parser.add_argument('-o', '--output', help='Output file path to save the duplicates in TSV format')
+
     args = parser.parse_args()
 
     folder_path = args.folder
     enable_delete = args.delete
+    output_file = args.output
+    calculate_sizes = True  # Set calculate_sizes to True by default
 
     duplicate_files = check_files_in_folder(folder_path)
 
     # After checking for duplicate files in the folder, print duplicate zip files
-    print_duplicate_zip_files(folder_path)
+    print_duplicate_zip_files(folder_path, calculate_sizes)
 
     found_duplicates = False
     duplicates_to_print = set()
@@ -148,7 +175,14 @@ def main():
     if enable_delete and not found_duplicates:
         print("\033[33mNo duplicates found. Nothing to delete.\033[0m")
 
+        # Save duplicates info to the output file in TSV format if provided
+    if output_file and duplicates_to_print:
+        with open(output_file, 'w') as f:
+            f.write("Name\tAbsolute Path\n")
+            for file_name in sorted(duplicates_to_print):
+                file_path = os.path.join(folder_path, file_name)
+                f.write(f"{file_name}\t{file_path}\n")
+
 
 if __name__ == '__main__':
     main()
-    
